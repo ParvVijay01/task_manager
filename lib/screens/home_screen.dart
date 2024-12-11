@@ -218,46 +218,55 @@ class _HomeScreenState extends State<HomeScreen> {
     String? currentDescription,
   }) {
     final TextEditingController titleController =
-        TextEditingController(text: currentTitle);
+    TextEditingController(text: currentTitle);
     final TextEditingController descriptionController =
-        TextEditingController(text: currentDescription);
+    TextEditingController(text: currentDescription);
 
     showModalBottomSheet(
       context: buildContext,
+      isScrollControlled: true, // Allow the bottom sheet to resize dynamically
       builder: (bottomSheetContext) {
         return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Task Title'),
-              ),
-              TextField(
-                controller: descriptionController,
-                decoration:
-                    const InputDecoration(labelText: 'Task Description'),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  if (id == null) {
-                    _addTask(titleController.text, descriptionController.text);
-                  } else {
-                    _updateTask(
-                        id, titleController.text, descriptionController.text);
-                  }
-                  Navigator.of(bottomSheetContext).pop();
-                },
-                child: Text(id == null ? 'Add Task' : 'Update Task'),
-              ),
-            ],
+          padding: EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+            bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom + 16.0, // Adjust for keyboard height
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Task Title'),
+                ),
+                TextField(
+                  controller: descriptionController,
+                  decoration:
+                  const InputDecoration(labelText: 'Task Description'),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    if (id == null) {
+                      _addTask(titleController.text, descriptionController.text);
+                    } else {
+                      _updateTask(
+                          id, titleController.text, descriptionController.text);
+                    }
+                    Navigator.of(bottomSheetContext).pop();
+                  },
+                  child: Text(id == null ? 'Add Task' : 'Update Task'),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
