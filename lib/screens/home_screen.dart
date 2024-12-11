@@ -1,3 +1,10 @@
+/// A stateful widget that serves as the home screen of the task management app.
+///
+/// This screen provides functionalities such as:
+/// - Viewing a list of tasks.
+/// - Adding, updating, and deleting tasks.
+/// - Syncing tasks between a local SQLite database and Firebase Firestore.
+/// - Handling offline and online states using connectivity checks.
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -8,6 +15,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class HomeScreen extends StatefulWidget {
+  /// Creates an instance of [HomeScreen].
   const HomeScreen({super.key});
 
   @override
@@ -28,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _listenForConnectivityChanges();
   }
 
+  /// Initializes the local SQLite database and loads tasks.
   Future<void> _initializeDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'tasks.db');
@@ -42,8 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
-          await db
-              .execute('ALTER TABLE tasks ADD COLUMN synced INTEGER DEFAULT 0');
+          await db.execute('ALTER TABLE tasks ADD COLUMN synced INTEGER DEFAULT 0');
         }
       },
     );
@@ -52,30 +60,31 @@ class _HomeScreenState extends State<HomeScreen> {
     _syncTasksFromFirebase();
   }
 
+  /// Listens for changes in connectivity and triggers task sync when online.
   void _listenForConnectivityChanges() {
     _connectivityStream.listen((List<ConnectivityResult> results) async {
-      // Check if any connectivity result indicates connectivity
       if (results.any((result) => result != ConnectivityResult.none)) {
-        // Trigger sync if connectivity is available
         await _syncUnsyncedTasks();
       }
     });
   }
 
+  /// Fetches tasks from the local SQLite database.
   Future<void> _fetchTasksFromDatabase() async {
     final List<Map<String, dynamic>> tasks = await _database.query('tasks');
     setState(() {
       _tasks.clear();
       _tasks.addAll(tasks.map((task) => {
-            'id': task['id'],
-            'title': task['title'],
-            'description': task['description'],
-            'status': task['status'] == 1,
-            'synced': task['synced'] == 1,
-          }));
+        'id': task['id'],
+        'title': task['title'],
+        'description': task['description'],
+        'status': task['status'] == 1,
+        'synced': task['synced'] == 1,
+      }));
     });
   }
 
+  /// Syncs tasks from Firebase Firestore to the local SQLite database.
   Future<void> _syncTasksFromFirebase() async {
     final snapshot = await _firestore.collection('tasks').get();
     for (var doc in snapshot.docs) {
@@ -95,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _fetchTasksFromDatabase();
   }
 
+  /// Syncs unsynced tasks from the local SQLite database to Firebase Firestore.
   Future<void> _syncUnsyncedTasks() async {
     final List<Map<String, dynamic>> unsyncedTasks = await _database.query(
       'tasks',
@@ -119,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _fetchTasksFromDatabase();
   }
 
+  /// Adds a new task to the local SQLite database and optionally syncs it to Firebase Firestore.
   Future<void> _addTask(String title, String description) async {
     final id = await _database.insert(
       'tasks',
@@ -149,6 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _fetchTasksFromDatabase();
   }
 
+  /// Updates an existing task in the local SQLite database and optionally syncs it to Firebase Firestore.
   Future<void> _updateTask(int id, String title, String description) async {
     await _database.update(
       'tasks',
@@ -175,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _fetchTasksFromDatabase();
   }
 
+  /// Deletes a task from the local SQLite database and optionally from Firebase Firestore.
   Future<void> _deleteTask(int id) async {
     await _database.delete('tasks', where: 'id = ?', whereArgs: [id]);
 
@@ -186,6 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _fetchTasksFromDatabase();
   }
 
+  /// Toggles the status of a task between complete and incomplete.
   Future<void> _toggleStatus(int id, bool currentStatus) async {
     await _database.update(
       'tasks',
@@ -211,6 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _fetchTasksFromDatabase();
   }
 
+  /// Opens a bottom sheet for adding or updating a task.
   void _openBottomSheet({
     required BuildContext buildContext,
     int? id,
@@ -224,14 +239,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showModalBottomSheet(
       context: buildContext,
-      isScrollControlled: true, // Allow the bottom sheet to resize dynamically
+      isScrollControlled: true,
       builder: (bottomSheetContext) {
         return Padding(
           padding: EdgeInsets.only(
             left: 16.0,
             right: 16.0,
             top: 16.0,
-            bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom + 16.0, // Adjust for keyboard height
+            bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom + 16.0,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -267,7 +282,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -284,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final task = _tasks[index];
                 return Card(
                   margin:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: ListTile(
                     title: Text(task['title']),
                     subtitle: Text(task['description']),
